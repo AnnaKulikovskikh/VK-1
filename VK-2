@@ -1,0 +1,135 @@
+from urllib.parse import urlencode
+import requests
+
+APP_ID = 7308157
+AUTH_URL = 'https://oauth.vk.com/authorize'
+params1 = {
+  'client_id': APP_ID,
+  'display': 'page',
+  'scope':'users,friends,status',
+  'response_type': 'token',
+  'v':5.52,
+}
+
+print('?'.join((AUTH_URL,urlencode(params1))))
+
+
+TOKEN = '9626699bc2804b943312a029c866ffb97895c64cf68236055930609acdf40299a3ab9f9324325baf4d263'
+
+#TOKEN = '73eaea320bdc0d3299faa475c196cfea1c4df9da4c6d291633f9fe8f83c08c4de2a3abf89fbc3ed8a44e1'
+
+class User:
+ def __init__(self, token):
+        self.token = token
+
+
+  def get_params(self):
+    return {
+      'access_token': TOKEN,
+      'v': 5.52,
+    }
+
+
+ def __and__ (self, other_user):
+		   #other_user - это другой экземпляр класса user
+		   #далее идет логика получения общего списка друзей
+    mutal_user_list = self + other
+    return mutal_user_list
+
+  #def __str__(self, user):
+  #  return str(self)
+
+
+  def myinfo(self):
+    params = self.get_params()
+    response = requests.get(
+      'https://api.vk.com/method/users.get',
+      params,
+    )
+    return response.json()
+
+  def friends(self):
+    params = self.get_params()
+    response = requests.get(
+      'https://api.vk.com/method/friends.get',
+      params,
+    )
+    return response.json()
+
+  def mutual(self,id_user1,id_user2):
+    params = self.get_params()
+    params['source_uid'] = id_user1
+    params['target_uid'] = id_user2
+    response = requests.get(
+      'https://api.vk.com/method/friends.getMutual',
+      params,
+    )
+    return response.json()
+
+  def name_friends(self,id_user):
+    params = self.get_params()
+    params['user_ids'] = id_user
+    response = requests.get(
+     'https://api.vk.com/method/users.get',
+      params,
+    )
+    a1 = response.json()
+    a2 = a1['response']
+    name1 = a2[0]['first_name']
+    name2 = a2[0]['last_name']
+    name = name1 + ' ' + name2
+    return name
+
+if __name__ == "__main__":
+   Anna = User(TOKEN)
+   info_json=Anna.myinfo()
+   #a = info_json["response"]
+   anna_id=info_json["response"][0]["id"]
+   print(Anna.name_friends(anna_id))
+   print('Ссылка на профиль: ','vk.com/id' + str(anna_id))
+
+   friends_json = Anna.friends()
+   #a1 = friends_json["response"]
+   friends = friends_json["response"]["items"]
+
+   for i in friends:
+     s=0
+     try:
+       name = Anna.name_friends(i)  #имя друга, i - id друга
+     except(KeyError):
+       while not KeyError:
+         s+=1
+         if s==10:
+           break
+         time.sleep(1)
+         name = Anna.name_friends(i)
+
+   print("Друг", name, '  Ссылка на профиль:  ','vk.com/id' + str(i))
+   mutual_friends = Anna.mutual(anna_id,i)  #id общих друзей
+   names_friends=''
+   try:
+      s = 0
+      all_friends = mutual_friends['response']
+    except (KeyError):
+      while not KeyError:
+        if s == 10:
+          break
+        s+=1
+        time.sleep(1)
+        all_friends = mutual_friends['response']
+    if len(all_friends) == 0:
+      print('   нет общих друзий')
+    else:
+      for j in all_friends:
+        try:
+          s = 0
+          names_friends += Anna.name_friends(j) + ' '
+        except (KeyError):
+          while not KeyError:
+            if s == 10:
+              break
+            s+=1
+            time.sleep(1)
+            names_friends += Anna.name_friends(j) + ' '
+
+      print('   Общие друзья:  ',names_friends)
